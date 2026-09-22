@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>To-Do Full Stack</title>
+</head>
+<body>
+    <h1>Mi To-Do Full Stack</h1>
+
+    <input id="inputTexto" type="text" placeholder="Nueva tarea...">
+    <button id="btnAgregar">Agregar</button>
+
+    <ul id="listaTareas"></ul>
+
+    <script>
+        const API = '/tareas';
+
+        const input = document.querySelector('#inputTexto');
+        const btn = document.querySelector('#btnAgregar');
+        const lista = document.querySelector('#listaTareas');
+
+        // Cargar tareas al abrir la página
+        async function cargarTareas() {
+            const respuesta = await fetch(API);
+            const tareas = await respuesta.json();
+
+            lista.innerHTML = '';
+
+            tareas.forEach(function(t) {
+                const li = document.createElement('li');
+
+                // Checkbox para marcar como hecha
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = t.hecha === 1;
+
+                checkbox.addEventListener('change', async function() {
+                    await fetch(API + '/' + t.id, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ hecha: checkbox.checked })
+                    });
+                });
+
+                // Texto de la tarea
+                const span = document.createElement('span');
+                span.textContent = t.texto;
+
+                // Botón X para borrar
+                const btnBorrar = document.createElement('button');
+                btnBorrar.textContent = 'X';
+
+                btnBorrar.addEventListener('click', async function() {
+                    await fetch(API + '/' + t.id, { method: 'DELETE' });
+                    cargarTareas();
+                });
+
+                li.appendChild(checkbox);
+                li.appendChild(span);
+                li.appendChild(btnBorrar);
+                lista.appendChild(li);
+            });
+        }
+
+        // Agregar tarea nueva
+        btn.addEventListener('click', async function() {
+            const texto = input.value.trim();
+            if (texto === '') return;
+
+            await fetch(API, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ texto: texto })
+            });
+
+            input.value = '';
+            cargarTareas();
+        });
+
+        // Arrancar
+        cargarTareas();
+    </script>
+</body>
+</html>
